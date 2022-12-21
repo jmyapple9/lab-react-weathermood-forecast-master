@@ -1,8 +1,10 @@
 import axios from 'axios';
+import {FORECASTDAYS} from '/config.jsx'
 
 // TODO replace the key with yours
-const key = 'YOUR OWN OPENWEATHERMAP KEY';
-const baseUrl = `http://api.openweathermap.org/data/2.5/weather?appid=${key}`;
+const key = '40157db88d240d8b1a441c43f2fec94a'; // My openweathermap key
+const todayUrl = `https://api.openweathermap.org/data/2.5/weather?appid=${key}`;
+const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?appid=${key}`;
 
 export function getWeatherGroup(code) {
     let group = 'na';
@@ -31,7 +33,7 @@ export function capitalize(string) {
 let weatherSource = axios.CancelToken.source();
 
 export function getWeather(city, unit) {
-    var url = `${baseUrl}&q=${encodeURIComponent(city)}&units=${unit}`;
+    var url = `${todayUrl}&q=${encodeURIComponent(city)}&units=${unit}`;
 
     console.log(`Making request to: ${url}`);
 
@@ -63,8 +65,45 @@ export function cancelWeather() {
 
 export function getForecast(city, unit) {
     // TODO
-}
+    var url = `${forecastUrl}&q=${encodeURIComponent(city)}&units=${unit}`;
+
+    console.log(`Making request to: ${url}`);
+
+    return axios.get(url, {cancelToken: weatherSource.token}).then(function(res) {
+        if (res.data.cod && res.data.message) {
+            // console('testing1!!!!!!!')
+            throw new Error(res.data.message);
+        } else {
+            let F = [];
+            for(let i=7;i<8*FORECASTDAYS;i+=8){
+                // console.log('api getting data: ',res.data.list[i]);
+                const f={
+                    code: res.data.list[i].weather[0].id,
+                    group: getWeatherGroup(res.data.list[i].weather[0].id),
+                    description: res.data.list[i].weather[0].description,
+                    temp: res.data.list[i].main.temp,
+                    id: i,
+                }
+                F.push(f);
+            }
+            // console.log(F)
+            
+            return {
+                city: capitalize(city),
+                forecastArr: F,
+                unit: unit // or 'imperial'
+            };
+        }
+    }).catch(function(err) {
+        if (axios.isCancel(err)) {
+            console.error(err.message, err);
+        } else {
+            throw err;
+        }
+    });
+    }
 
 export function cancelForecast() {
     // TODO
+    weatherSource.cancel('Request canceled');
 }
