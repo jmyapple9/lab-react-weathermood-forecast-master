@@ -11,25 +11,43 @@ import {
     NavbarBrand,
     Nav,
     NavItem,
-    NavLink
+    NavLink,
+    UncontrolledDropdown,
+    Dropdown,
+    DropdownToggle,
+    DropdownMenu,
+    DropdownItem
 } from 'reactstrap';
+import {
+    withCookies, Cookies
+} from 'react-cookie';
+import { instanceOf } from 'prop-types';
 
 import Today from 'components/Today.jsx';
 import Forecast from 'components/Forecast.jsx';
 
 import './Main.css';
 
-export default class Main extends React.Component {
+class Main extends React.Component {
+    static propTypes = {
+        cookies: instanceOf(Cookies).isRequired
+    };
     constructor(props) {
         super(props);
-
+        const {cookies} = props;
         this.state = {
             unit: 'metric',
-            navbarToggle: false
+            city: 'na',
+            navbarToggle: false,
+            favoriteCities: cookies.get('cities')?cookies.get('cities').split(';'):[]
         };
 
         this.handleNavbarToggle = this.handleNavbarToggle.bind(this);
         this.handleUnitChange = this.handleUnitChange.bind(this);
+        this.handleFavoriteCities = this.setFavoriteCities.bind(this);
+        this.clearFavoriteCities = this.clearFavoriteCities.bind(this);
+        this.handleFormQuery = this.handleFormQuery.bind(this);
+
     }
 
     render() {
@@ -48,6 +66,20 @@ export default class Main extends React.Component {
                                     <NavItem>
                                         <NavLink tag={Link} to='/forecast'>Forecast</NavLink>
                                     </NavItem>
+                                    <UncontrolledDropdown>
+                                        <DropdownToggle nav caret>
+                                            Favorite City
+                                        </DropdownToggle>
+                                        <DropdownMenu right>
+                                            {
+                                                this.state.favoriteCities.map((item)=><DropdownItem key={item} onClick = {()=>this.handleFormQuery(item, this.state.unit)}>{item}</DropdownItem>)
+                                            }
+                                            <DropdownItem divider />
+                                            <DropdownItem onClick={this.clearFavoriteCities}>
+                                                clear
+                                            </DropdownItem>
+                                        </DropdownMenu>
+                                    </UncontrolledDropdown>
                                 </Nav>
                                 <span className='navbar-text ml-auto'>DataLab</span>
                             </Collapse>
@@ -55,7 +87,7 @@ export default class Main extends React.Component {
                     </div>
 
                     <Route exact path="/" render={() => (
-                        <Today unit={this.state.unit} onUnitChange={this.handleUnitChange} />
+                        <Today unit={this.state.unit} onUnitChange={this.handleUnitChange} onQuery={this.handleFormQuery}/>
                     )}/>
                     <Route exact path="/forecast" render={() => (
                         <Forecast unit={this.state.unit} onUnitChange={this.handleUnitChange} />
@@ -74,6 +106,32 @@ export default class Main extends React.Component {
     handleUnitChange(unit) {
         this.setState({
             unit: unit
+        },()=>{}); //Unused call back function after update state
+    }
+    setFavoriteCities(city){
+        const cookies = this.props;
+        let FavoriteCity = this.state.favoriteCities;
+        if(!(FavoriteCity.indexOf(city)>=0))
+            FavoriteCity.push(city)
+
+        this.setState({favoriteCities: FavoriteCity});
+        cookies.set("cities", FavoriteCity.join(';'));
+        // console.log('set cookie: ',cookies);
+    }
+    clearFavoriteCities(){
+        const cookies = this.props;
+        this.setState({
+            favoriteCities: [],
+        },()=>{});
+        cookies.set('cities',"");
+    }
+    handleFormQuery(city, unit){
+        this.setState({
+            city: city,
+            unit: unit,
         });
+        this.setFavoriteCities(city);
     }
 }
+
+export default withCookies(Main);

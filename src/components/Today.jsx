@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import WeatherDisplay from 'components/WeatherDisplay.jsx';
 import WeatherForm from 'components/WeatherForm.jsx';
@@ -7,6 +8,13 @@ import {getWeather} from 'api/open-weather-map.js';
 import './weather.css';
 
 export default class Today extends React.Component {
+    static propTypes = {
+        masking: PropTypes.bool,
+        group: PropTypes.string,
+        description: PropTypes.string,
+        temp: PropTypes.number,
+        unit: PropTypes.string
+    };
 
     static getInitWeatherState() {
         return {
@@ -39,6 +47,14 @@ export default class Today extends React.Component {
             cancelWeather();
         }
     }
+    // TODO
+    componentWillReceiveProps(nextProps) {
+        console.log(nextProps)
+        this.setState({
+            unit: nextProps.unit
+        }, ()=>{this.getWeather(nextProps.city, nextProps.unit)});
+        
+    }
 
     render() {
         return (
@@ -61,14 +77,14 @@ export default class Today extends React.Component {
                 this.setState({
                     ...weather,
                     loading: false
-                }, () => this.notifyUnitChange(unit));
+                });
             }).catch(err => {
                 console.error('Error getting weather', err);
 
                 this.setState({
                     ...Today.getInitWeatherState(unit),
                     loading: false
-                }, () => this.notifyUnitChange(unit));
+                });
             });
         });
 
@@ -80,12 +96,7 @@ export default class Today extends React.Component {
     }
 
     handleFormQuery(city, unit) {
+        this.props.onQuery(city, unit);
         this.getWeather(city, unit);
-    }
-
-    notifyUnitChange(unit) {
-        if (this.props.units !== unit) {
-            this.props.onUnitChange(unit);
-        }
     }
 }
